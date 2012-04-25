@@ -56,7 +56,7 @@ struct genome {
 };
 
 struct critter {
-    int position[2];
+    int x, y;
     int direction;   
     int infections;
     int action;
@@ -74,7 +74,7 @@ struct genome *genomes;
 
 int width;
 int ncritters;
-struct critter ***arena;
+struct critter *critters;
 
 
 
@@ -99,6 +99,22 @@ constant(right, ACT_RIGHT);
 constant(left, ACT_LEFT);
 constant(infect, ACT_INFECT);
 
+static struct critter *
+whats_at(int x, int y)
+{
+    int i;
+
+    for (i = 0; i < ncritters; i += 1) {
+        if (! critters[i].genome) {
+            break;
+        }
+        if ((critters[i].x == x) && (critters[i].y == y)) {
+            return &critters[i];
+        }
+    }
+    return NULL;
+}
+
 static int
 modify_coord(int *x, int *y, long direction)
 {
@@ -119,7 +135,7 @@ modify_coord(int *x, int *y, long direction)
 
     if ((*x < 0) || (*x >= width) ||
         (*y < 0) || (*y >= width)) {
-        return 1;
+        return WALL;
     }
 
     return 0;
@@ -130,8 +146,8 @@ forf_critter_look(struct forf_env *env)
 {
     struct critter *c = (struct critter *)env->udata;
     long direction = forf_pop_num(env);
-    int x = c->position[0];
-    int y = c->position[1];
+    int x = c->x;
+    int y = c->y;
     int wall;
     long ret = EMPTY;
 
@@ -140,7 +156,7 @@ forf_critter_look(struct forf_env *env)
     if (wall) {
         ret = WALL;
     } else {
-        struct critter *o = arena[y][x];
+        struct critter *o = whats_at(x, y);
     
         if (! o) {
             ret = EMPTY;
@@ -236,7 +252,7 @@ dump_arena()
     for (y = width - 1; y >= 0; y -= 1) {
         putchar('|');
         for (x = 0; x < width; x += 1) {
-            struct critter *c = arena[y][x];
+            struct critter *c = whats_at(x, y);
 
             if (c) {
                 printf("\033[4%dm", c->genome->ord + 1);
@@ -294,65 +310,97 @@ read_genome(struct genome *g, struct forf_lexical_env *lenv, char *path)
     return 1;
 }
 
+static int
+cmpcritter(const void *a, const void *b)
+{
+    struct critter *ca = (struct critter *)a;
+    struct critter *cb = (struct critter *)b;
+
+    return ca->infections - cb->infections;
+}
+
 void
 one_round()
 {
+    int i;
     static unsigned int counter = 1;
-    int x, y;
+    static struct critter **order = NULL;
 
-    for (y = 0; y < width; y += 1) {
-        for (x = 0; x < width; x += 1) {
-            struct critter *c = arena[y][x];
-            struct genome *g;
-            int ret;
-
-            if ((! c) || (c->color == counter)) {
-                continue;
-            }
-
-            g = c->genome;
-
-            g->env.udata = c;
-            forf_stack_copy(&g->cmd, &g->prog);
-            forf_stack_reset(&g->data);
-            c->action = ACT_WAIT;
-            c->position[0] = x;
-            c->position[1] = y;
-            ret = forf_eval(&g->env);
-            if (! ret) {
-                /* XXX: log error? */
-                continue;
-            }
-
-            switch (c->action) {
-                case ACT_RIGHT:
-                    c->direction = (c->direction + 1) % 4;
-                    break;
-                case ACT_LEFT:
-                    c->direction = (c->direction + 5) % 4;
-                    break;
-                case ACT_HOP:
-                    {
-                        int x1 = x;
-                        int y1 = y;
-                        int wall;
-
-                        wall = modify_coord(&x1, &y1, c->direction);
-
-                        if ((! wall) && (! arena[y1][x1])) {
-                            arena[y1][x1] = c;
-                            arena[y][x] = NULL;
-                        }
-                    }
-                    break;
-                case ACT_INFECT:
-                            
-                    break;
-            }
-            c->color = counter;
+    if (! order) {
+        order = (struct critter **)calloc(ncritters, sizeof (struct critter *));
+        for (i = 0; i < ncritters; i += 1) {
+            order[i] = &critters[i];
         }
     }
-    counter += 1;
+
+    /* Shuffle order */
+    for (i = 0; i < ncritters; i += 1) {
+        int j = rand() % ncritters;
+        struct critter *c;
+
+        c = order[i];
+        order[i] = order[j];
+        order[j] = c;
+    }
+
+    /* Now sort by infections */
+    qsort(order, ncritters, sizeof (struct critter *), cmpcritter);
+
+    /* Run programs */
+    for (i = 0; i < ncritters; i += 1) {
+        struct critter *c = order[i];
+        struct genome *g = c->genome;
+        int ret;
+
+        g->env.udata = c;
+        forf_stack_copy(&g->cmd, &g->prog);
+        forf_stack_reset(&g->data);
+        c->action = ACT_WAIT;
+        ret = forf_eval(&g->env);
+        if (! ret) {
+            /* XXX: log error? */
+            continue;
+        }
+    }
+
+    /* Now apply moves */
+    for (i = 0; i < ncritters; i += 1) {
+        struct critter *c = order[i];
+
+        switch (c->action) {
+            case ACT_RIGHT:
+                c->direction = (c->direction + 1) % 4;
+                break;
+            case ACT_LEFT:
+                c->direction = (c->direction + 5) % 4;
+                break;
+            case ACT_HOP:
+                {
+                    int x1 = c->x;
+                    int y1 = c->y;
+                    int wall = modify_coord(&x1, &y1, c->direction);
+
+                    if ((! wall) && (! whats_at(x1, y1))) {
+                        c->x = x1;
+                        c->y = y1;
+                    }
+                }
+                break;
+            case ACT_INFECT:
+                {
+                    int x1 = c->x;
+                    int y1 = c->y;
+                    int wall = modify_coord(&x1, &y1, c->direction);
+                    struct critter *o;
+
+                    if ((! wall) && (o = whats_at(x1, y1))) {
+                        o->genome = c->genome;
+                    }
+                    o->infections += 1;
+                }
+                break;
+        }
+    }
     dump_arena();
     usleep(300000);
 }
@@ -395,34 +443,29 @@ main(int argc, char *argv[])
 
     /* Compute size of the play area */
     for (width = 1; width * width < ncritters; width += 1);
-    width *= 4;
+    width *= 2;
 
-    /* Dimension arena */
-    arena = (struct critter ***)calloc(width, sizeof (struct critter **));
-    for (i = 0; i < width; i += 1) {
-        arena[i] = (struct critter **)calloc(width, sizeof (struct critter *));
-    }
+    /* Dimension critters */
+    critters = (struct critter *)calloc(ncritters, sizeof (struct critter));
 
     /* Create and scatter critters */
     for (i = 0; i < ngenomes; i += 1) {
         int j;
 
         for (j = 0; j < INITIAL_CRITTERS; j += 1) {
-            struct critter *c = (struct critter *)calloc(1, sizeof (struct critter));
+            struct critter *c = &critters[i * INITIAL_CRITTERS + j];
             int x, y;
 
             do {
                 x = rand() % width;
                 y = rand() % width;
-            } while (arena[y][x]);
+            } while (whats_at(x, y));
 
+            c->x = x;
+            c->y = y;
             c->direction = rand() % 4;
             c->infections = 0;
-            c->action = ACT_WAIT;
-
             c->genome = &genomes[i];
-
-            arena[y][x] = c;
         }
     }
 

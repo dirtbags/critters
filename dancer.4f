@@ -1,5 +1,9 @@
 get-direction look
-empty =
-{ hop set-action! }
-{ right set-action! }
-ifelse
+dup them = 
+    { infect set-action! }
+    { empty = 
+        { hop set-action! }
+        { right set-action! }
+        ifelse
+    }
+    ifelse
