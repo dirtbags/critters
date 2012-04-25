@@ -95,7 +95,6 @@ void forf_push_num(struct forf_env *env, long i);
 /** Pop a whole stack */
 struct forf_stack forf_pop_stack(struct forf_env *env);
 
-
 /** The base lexical environment */
 extern struct forf_lexical_env forf_base_lexical_env[];
 
@@ -149,5 +148,11 @@ int forf_eval_once(struct forf_env *env);
 
 /** Evaluate the entire command stack */
 int forf_eval(struct forf_env *env);
+
+/** Print a value to file f */
+void forf_print_val(FILE *f, struct forf_value *val, struct forf_lexical_env *lenv);
+
+/** Print a stack to file f */
+void forf_print_stack(FILE *f, struct forf_stack *s, struct forf_lexical_env *lenv);
 
 #endif

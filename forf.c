@@ -758,3 +758,45 @@ forf_eval(struct forf_env *env)
   }
   return 1;
 }
+
+void
+forf_print_val(FILE *f, struct forf_value *val, struct forf_lexical_env *lenv)
+{
+  switch (val->type) {
+    case forf_type_number:
+      fprintf(f, "%ld", val->v.i);
+      break;
+    case forf_type_proc:
+      if (lenv) {
+        int i;
+
+        for (i = 0; lenv[i].name; i += 1) {
+          if (lenv[i].proc == val->v.p) {
+            fprintf(f, "[%s]", lenv[i].name);
+            return;
+          }
+        }
+      }
+
+      fprintf(f, "[proc %p]", val->v.p);
+      break;
+    case forf_type_stack_begin:
+      fprintf(f, "{");
+      break;
+    case forf_type_stack_end:
+      fprintf(f, "}");
+      break;
+  }
+}
+
+void
+forf_print_stack(FILE *f, struct forf_stack *s, struct forf_lexical_env *lenv)
+{
+  size_t pos;
+
+  for (pos = 0; pos < s->top; pos += 1) {
+    forf_print_val(f, &(s->stack[pos]), lenv);
+    fprintf(f, " ");
+  }
+}
+

@@ -1,0 +1,5 @@
+get-direction look
+empty =
+{ hop set-action! }
+{ right set-action! }
+ifelse

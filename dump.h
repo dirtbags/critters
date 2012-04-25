@@ -29,42 +29,4 @@
 #define TEK_point(x, y) TEK("\034%c%c%c%c", TEK_coord(x, y))
 #define TEK_text(x, y, s) TEK("\035%c%c%c%c\037%s", TEK_coord(x, y), s)
 
-void
-forf_print_val(struct forf_value *val)
-{
-  switch (val->type) {
-    case forf_type_number:
-      printf("%ld", val->v.i);
-      break;
-    case forf_type_proc:
-      printf("[proc %p]", val->v.p);
-      break;
-    case forf_type_stack_begin:
-      printf("{");
-      break;
-    case forf_type_stack_end:
-      printf("}");
-      break;
-  }
-}
-
-void
-forf_print_stack(struct forf_stack *s)
-{
-  size_t pos;
-
-  for (pos = 0; pos < s->top; pos += 1) {
-    forf_print_val(&(s->stack[pos]));
-    printf(" ");
-  }
-}
-
-void
-forf_dump_stack(struct forf_stack *s)
-{
-  printf("Stack at %p: ", s);
-  forf_print_stack(s);
-  printf("\n");
-}
-
 #endif
