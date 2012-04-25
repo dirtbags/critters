@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <time.h>
 
 #include "forf.h"
 #include "dump.h"
@@ -177,6 +178,7 @@ struct forf_lexical_env critter_lenv_addons[] = {
     {"wall", forf_critter_const_wall},
     {"us", forf_critter_const_us},
     {"them", forf_critter_const_them},
+    {"wait", forf_critter_const_wait},
     {"hop", forf_critter_const_hop},
     {"right", forf_critter_const_right},
     {"left", forf_critter_const_left},
@@ -229,16 +231,14 @@ dump_arena()
 
 
 
-struct genome *
-read_genome(struct forf_lexical_env *lenv, char *path)
+int
+read_genome(struct genome *g, struct forf_lexical_env *lenv, char *path)
 {
     FILE *f = fopen(path, "r");
-    struct genome *g = NULL;
 
     if (! f) {
-        return NULL;
+        return 0;
     }
-    g = (struct genome *)calloc(1, sizeof (struct genome));
 
     forf_stack_init(&g->prog, g->progvals, CSTACK_SIZE);
     forf_stack_init(&g->cmd, g->cmdvals, CSTACK_SIZE);
@@ -250,12 +250,58 @@ read_genome(struct forf_lexical_env *lenv, char *path)
     fclose(f);
     if (g->error_pos) {
         free(g);
-        return NULL;
+        return 0;
     }
 
     forf_stack_copy(&g->prog, &g->cmd);
 
-    return g;
+    return 1;
+}
+
+void
+one_round()
+{
+    int x, y;
+
+    for (y = 0; y < width; y += 1) {
+        for (x = 0; x < width; x += 1) {
+            struct critter *c = critters[y][x];
+            struct genome *g;
+            int ret;
+
+            if (! c) {
+                continue;
+            }
+
+            g = c->genome;
+
+            forf_env_set_udata(&g->env, c);
+            forf_stack_copy(&g->cmd, &g->prog);
+            forf_stack_reset(&g->data);
+            c->action = ACT_WAIT;
+            ret = forf_eval(&g->env);
+            if (! ret) {
+                DUMP();
+            }
+
+            switch (c->action) {
+                case ACT_RIGHT:
+                    c->direction = (c->direction + 1) % 4;
+                    break;
+                case ACT_LEFT:
+                    c->direction = (c->direction + 5) % 4;
+                    break;
+                case ACT_HOP:
+                    DUMP();
+                    break;
+                case ACT_INFECT:
+                    DUMP();
+                    break;
+            }
+        }
+    }
+    dump_arena();
+    sleep(1);
 }
 
 int
@@ -287,9 +333,15 @@ main(int argc, char *argv[])
     }
 
     /* Read programs */
+    ngenomes = 0;
     genomes = (struct genome *)calloc(argc - 1, sizeof (struct genome));
-    for (ngenomes = 0; ngenomes < argc - 1; ngenomes += 1) {
-        struct genome *g = read_genome(lenv, argv[ngenomes + 1]);
+    for (i = 1; i < argc; i += 1) {
+        DUMP_p(genomes);
+        DUMP_p(&genomes[ngenomes]);
+        if (read_genome(&genomes[ngenomes], lenv, argv[i])) {
+            forf_dump_stack(&(&genomes[ngenomes])->prog);
+            ngenomes += 1;
+        }
     }
     ncritters = ngenomes * INITIAL_CRITTERS;
 
@@ -297,6 +349,7 @@ main(int argc, char *argv[])
     for (width = 1; width * width < ncritters; width += 1);
     width *= 4;
 
+    /* Dimension critters array */
     critters = (struct critter ***)calloc(width, sizeof (struct critter **));
     for (i = 0; i < width; i += 1) {
         critters[i] = (struct critter **)calloc(width, sizeof (struct critter *));
@@ -323,11 +376,16 @@ main(int argc, char *argv[])
 
             c->genome = &genomes[i];
 
+            DUMP_d(i);
+            forf_dump_stack(&c->genome->prog);
+
             critters[y][x] = c;
         }
     }
 
-    dump_arena();
+    for (i = 0; i < rounds; i += 1) {
+        one_round();
+    }
 
     return 0;
 }

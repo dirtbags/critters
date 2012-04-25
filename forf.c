@@ -710,6 +710,13 @@ forf_env_init(struct forf_env         *env,
   env->udata   = udata;
 }
 
+void
+forf_env_set_udata(struct forf_env *env,
+                   void            *udata)
+{
+  env->udata = udata;
+}
+
 
 int
 forf_eval_once(struct forf_env *env)

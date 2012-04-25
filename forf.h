@@ -116,6 +116,9 @@ void forf_env_init(struct forf_env         *env,
                    struct forf_memory      *mem,
                    void                    *udata);
 
+void forf_env_set_udata(struct forf_env *env, void *udata);
+
+
 /** The type of a getch function (used for parsing) */
 typedef int (forf_getch_func)(void *);
 
