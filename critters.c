@@ -300,7 +300,6 @@ read_genome(struct genome *g, struct forf_lexical_env *lenv, char *path)
     g->error_pos = forf_parse_file(&g->env, f);
     fclose(f);
     if (g->error_pos) {
-        free(g);
         return 0;
     }
     g->ord = ngenomes;
@@ -400,8 +399,10 @@ one_round()
                 break;
         }
     }
-    dump_arena();
-    usleep(300000);
+    if (1) {
+        dump_arena();
+        usleep(300000);
+    }
 }
 
 int
