@@ -319,7 +319,7 @@ cmpcritter(const void *a, const void *b)
 }
 
 struct genome *
-one_round()
+one_round(int round)
 {
     int i;
     static struct critter **order = NULL;
@@ -356,6 +356,7 @@ one_round()
         if (g != winner) {
             winner = NULL;
         }
+
         g->env.udata = c;
         forf_stack_copy(&g->cmd, &g->prog);
         forf_stack_reset(&g->data);
@@ -363,7 +364,6 @@ one_round()
         ret = forf_eval(&g->env);
         if (! ret) {
             /* XXX: log error? */
-            DUMP();
             continue;
         }
     }
@@ -415,12 +415,57 @@ one_round()
                 break;
         }
     }
-    if (1) {
-        dump_arena();
-        usleep(300000);
-    }
 
-    return NULL;
+#if 0
+    dump_arena();
+    usleep(300000);
+#endif
+
+    return winner;
+}
+
+char *colors[] = {"4444ff", "00ff00", "008888", "ff0000", "880088", "888800", "888888", NULL};
+
+void
+print_header()
+{
+    int i;
+
+    printf("[%d,[", width);
+    for (i = 0; i < ngenomes; i += 1) {
+        if (i > 0) {
+            putchar(',');
+        }
+        printf("#%s", colors[i]);
+    }
+    printf("],[");
+}
+
+void
+print_critters(int round)
+{
+    int i;
+
+    if (round > 0) {
+        putchar(',');
+    }
+    printf("\n    [");
+    for (i = 0; i < ncritters; i += 1) {
+        struct critter *c = &critters[i];
+
+        if (i > 0) {
+            putchar(',');
+        }
+        printf("[%d,%d,%d,%d]", 
+               c->genome->ord, c->direction, c->x, c->y);
+    }
+    printf("]");
+}
+
+void
+print_footer()
+{
+    printf("\n]]\n");
 }
 
 int
@@ -487,14 +532,19 @@ main(int argc, char *argv[])
         }
     }
 
-    for (i = 0; i < rounds; i += 1) {
-        struct genome *g = one_round();
+    print_header();
 
+    for (i = 0; i < rounds; i += 1) {
+        struct genome *g;
+
+        print_critters(i);
+        g = one_round(i);
         if (g) {
-            printf("A winner is %p\n", g);
             break;
         }
     }
+
+    print_footer();
 
     return 0;
 }
