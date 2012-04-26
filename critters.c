@@ -318,11 +318,12 @@ cmpcritter(const void *a, const void *b)
     return ca->infections - cb->infections;
 }
 
-void
+struct genome *
 one_round()
 {
     int i;
     static struct critter **order = NULL;
+    struct genome *winner;
 
     if (! order) {
         order = (struct critter **)calloc(ncritters, sizeof (struct critter *));
@@ -330,6 +331,8 @@ one_round()
             order[i] = &critters[i];
         }
     }
+
+    winner = order[0]->genome;
 
     /* Shuffle order */
     for (i = 0; i < ncritters; i += 1) {
@@ -350,6 +353,9 @@ one_round()
         struct genome *g = c->genome;
         int ret;
 
+        if (g != winner) {
+            winner = NULL;
+        }
         g->env.udata = c;
         forf_stack_copy(&g->cmd, &g->prog);
         forf_stack_reset(&g->data);
@@ -360,6 +366,11 @@ one_round()
             DUMP();
             continue;
         }
+    }
+
+    /* We can stop if there's only one genome */
+    if (winner) {
+        return winner;
     }
 
     /* Now apply moves */
@@ -408,6 +419,8 @@ one_round()
         dump_arena();
         usleep(300000);
     }
+
+    return NULL;
 }
 
 int
@@ -475,7 +488,12 @@ main(int argc, char *argv[])
     }
 
     for (i = 0; i < rounds; i += 1) {
-        one_round();
+        struct genome *g = one_round();
+
+        if (g) {
+            printf("A winner is %p\n", g);
+            break;
+        }
     }
 
     return 0;
