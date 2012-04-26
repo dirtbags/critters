@@ -323,7 +323,6 @@ void
 one_round()
 {
     int i;
-    static unsigned int counter = 1;
     static struct critter **order = NULL;
 
     if (! order) {
@@ -396,7 +395,7 @@ one_round()
                     if ((! wall) && (o = whats_at(x1, y1))) {
                         o->genome = c->genome;
                     }
-                    o->infections += 1;
+                    c->infections += 1;
                 }
                 break;
         }

@@ -1,4 +1,4 @@
-CFLAGS = -Wall
+CFLAGS = -Wall -Werror
 
 critters: critters.o forf.o
 
