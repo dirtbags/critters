@@ -1,0 +1,35 @@
+get-direction look
+dup them = 
+    { infect set-action! }
+    { get-direction 3 + 4 % look
+    dup them = 
+        { get-direction look
+        empty = 
+            { hop set-action! }
+            { left set-action! }
+            ifelse
+        }
+        { get-direction 1 + 4 % look 
+        dup them =
+            { get-direction look
+            empty = 
+                { hop set-action! }
+                { right set-action! }
+                ifelse
+            }
+            { get-direction 2 + 4 % look
+            us =
+                { get-direction look
+                empty =
+                    { hop set-action!}
+                    { right set-action! }
+                    ifelse
+                }
+                { right set-action! }
+                ifelse
+            }
+            ifelse
+        }
+        ifelse
+    }
+    ifelse
