@@ -1,8 +1,10 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
 
 #include "forf.h"
+#include "cgi.h"
 #include "dump.h"
 
 #define LENV_SIZE 100
@@ -35,6 +37,7 @@ enum {
     ACT_INFECT
 };
 
+char *house[] = {"cluster.4f", "dancer.4f", "spread.4f", NULL};
 
 struct genome {
     struct forf_env env;
@@ -69,7 +72,7 @@ struct critter {
 /* Globals */
 int rounds = 500;
 
-int ngenomes;
+int ngenomes = 0;
 struct genome *genomes;
 
 int width;
@@ -283,12 +286,12 @@ dump_arena()
 
 
 int
-read_genome(struct genome *g, struct forf_lexical_env *lenv, char *path)
+read_genome(struct genome *g, char *path)
 {
     FILE *f = fopen(path, "r");
 
     if (! f) {
-        return 0;
+        return -1;
     }
 
     forf_stack_init(&g->prog, g->progvals, CSTACK_SIZE);
@@ -300,13 +303,34 @@ read_genome(struct genome *g, struct forf_lexical_env *lenv, char *path)
     g->error_pos = forf_parse_file(&g->env, f);
     fclose(f);
     if (g->error_pos) {
-        return 0;
+        return -1;
     }
     g->ord = ngenomes;
 
     forf_stack_copy(&g->prog, &g->cmd);
 
-    return 1;
+    return 0;
+}
+
+int
+read_genome_str(struct genome *g, char *str)
+{
+    forf_stack_init(&g->prog, g->progvals, CSTACK_SIZE);
+    forf_stack_init(&g->cmd, g->cmdvals, CSTACK_SIZE);
+    forf_stack_init(&g->data, g->datavals, DSTACK_SIZE);
+    forf_memory_init(&g->mem, g->memvals, MEMORY_SIZE);
+    forf_env_init(&g->env, lenv, &g->data, &g->cmd, &g->mem, NULL);
+
+    g->error_pos = forf_parse_string(&g->env, str);
+    if (g->error_pos) {
+        return -1;
+    }
+
+    g->ord = ngenomes;
+
+    forf_stack_copy(&g->prog, &g->cmd);
+
+    return 0;
 }
 
 static int
@@ -416,11 +440,6 @@ one_round(int round)
         }
     }
 
-#if 0
-    dump_arena();
-    usleep(300000);
-#endif
-
     return winner;
 }
 
@@ -472,6 +491,7 @@ int
 main(int argc, char *argv[])
 {
     int i;
+    char *web = strstr(argv[0], ".cgi");
 
     lenv[0].name = NULL;
     lenv[0].proc = NULL;
@@ -491,17 +511,57 @@ main(int argc, char *argv[])
         }
 
         srand(seed);
-        fprintf(stdout, "// SEED=%d\n", seed);
     }
 
-    /* Read programs */
-    ngenomes = 0;
-    genomes = (struct genome *)calloc(argc - 1, sizeof (struct genome));
-    for (i = 1; i < argc; i += 1) {
-        if (read_genome(&genomes[ngenomes], lenv, argv[i])) {
+    if (web) {
+        /* Run as a CGI */
+        char   program[8192];
+
+        if (cgi_init(argv)) {
+            return 0;
+        }
+        cgi_header("application/json");
+
+        /* Count house genomes */
+        for (i = 0; house[i]; i += 1);
+        genomes = (struct genome *)calloc(i + 1, sizeof (struct genome));
+
+        /* Read them in */
+        for (i = 0; house[i]; i += 1) {
+            if (! read_genome(&genomes[ngenomes], house[i])) {
+                ngenomes += 1;
+            }
+        }
+
+        program[0] = 0;
+        while (1) {
+            size_t len;
+            char   key[20];
+
+            len = cgi_item(key, sizeof key);
+            if (0 == len) break;
+            switch (key[0]) {
+                case 'p':
+                    cgi_item(program, sizeof(program));
+                    break;
+            }
+        }
+
+        if (! read_genome_str(&genomes[ngenomes], program)) {
             ngenomes += 1;
         }
+    } else {
+        /* Run as CLI */
+
+        /* Read programs */
+        genomes = (struct genome *)calloc(argc - 1, sizeof (struct genome));
+        for (i = 1; i < argc; i += 1) {
+            if (! read_genome(&genomes[ngenomes], argv[i])) {
+                ngenomes += 1;
+            }
+        }
     }
+
     ncritters = ngenomes * INITIAL_CRITTERS;
 
     /* Compute size of the play area */
@@ -532,19 +592,29 @@ main(int argc, char *argv[])
         }
     }
 
-    print_header();
+    if (web) {
+        print_header();
+    }
 
     for (i = 0; i < rounds; i += 1) {
         struct genome *g;
 
-        print_critters(i);
+        if (web) {
+            print_critters(i);
+        } else {
+            dump_arena();
+            usleep(300000);
+        }
+
         g = one_round(i);
         if (g) {
             break;
         }
     }
 
-    print_footer();
+    if (web) {
+        print_footer();
+    }
 
     return 0;
 }
