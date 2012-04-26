@@ -357,6 +357,7 @@ one_round()
         ret = forf_eval(&g->env);
         if (! ret) {
             /* XXX: log error? */
+            DUMP();
             continue;
         }
     }
@@ -395,6 +396,10 @@ one_round()
                         o->genome = c->genome;
                     }
                     c->infections += 1;
+
+                    for (x1 = 0; x1 < c->genome->env.memory->size; x1 += 1) {
+                        c->genome->env.memory->mem[x1] = 0;
+                    }
                 }
                 break;
         }
