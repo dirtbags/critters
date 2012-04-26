@@ -7,7 +7,6 @@
   </head>
   <body>
 syscmd(markdown forf.txt)
-include(nav.html.inc)
   </body>
 </html>
 

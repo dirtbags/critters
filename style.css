@@ -1,0 +1,15 @@
+body {
+    background: black;
+    color: #cdc;
+}
+#p {
+    width: 40em;
+    height: 30em;
+}
+#arena {
+    float: right;
+    border: solid #888 2px;
+}
+pre {
+    border: solid #888 2px;
+}

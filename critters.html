@@ -2,15 +2,7 @@
 <html>
     <head>
         <title>Critters</title>
-        <style type="text/css">
-body {
-    background: black;
-}
-#p {
-    width: 40em;
-    height: 12em;
-}
-        </style>
+        <link rel="stylesheet" href="style.css" type="text/css">
         <script type="text/javascript">
 TAU = Math.PI * 2;
 
@@ -109,8 +101,42 @@ function submit() {
     </head>
     <body>
         <canvas id="arena"></canvas>
-        <textarea id="p">right set-action!</textarea>
+        <textarea id="p">right set-action!
+get-direction look them = { infect set-action! } if</textarea>
         <br>
         <button onclick="submit();">Submit</button>
+
+        <h2>Explanation</h2>
+        <p>
+            This is a <a href="forf.html">forf</a> implementation
+            of Stuart Reges's <a href="http://www.cs.washington.edu/education/courses/cse142/09wi/handouts/17.html">Critters</a>
+            game.  See his page for an explanation.
+        </p>
+
+        <h3>Constants</h3>
+        <ul>
+            <li>directions: north, south, west, east</li>
+            <li>objects: empty, wall, us, them</li>
+            <li>actions: wait, right, left, inject</li>
+        </ul>
+
+        <h3>Procedures</h3>
+        <dl>
+            <dt><i>direction</i> look</dt>
+            <dd>Push whatever object is in the given adjacent space</dd>
+
+            <dt><i>action</i> set-action!</dt>
+            <dd>Perform given action for our turn</dd>
+
+            <dt>get-direction</dt>
+            <dd>Return the direction this critter is facing</dd>
+
+            <dt>get-infections</dt>
+            <dd>Return the number of infection attempts this critter has made</dd>
+
+            <dt><i>max</i> random</dt>
+            <dd>Return a number between 0 and <i>max</i>-1, inclusive</dd>
+        </dl>
+
     </body>
 </html>
