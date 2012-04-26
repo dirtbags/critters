@@ -406,7 +406,7 @@ one_round(int round)
                 c->direction = (c->direction + 1) % 4;
                 break;
             case ACT_LEFT:
-                c->direction = (c->direction + 5) % 4;
+                c->direction = (c->direction + 3) % 4;
                 break;
             case ACT_HOP:
                 {
@@ -455,7 +455,7 @@ print_header()
         if (i > 0) {
             putchar(',');
         }
-        printf("#%s", colors[i]);
+        printf("\"#%s\"", colors[i]);
     }
     printf("],[");
 }
