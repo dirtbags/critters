@@ -238,8 +238,8 @@ struct forf_lexical_env critter_lenv_addons[] = {
     {"get-direction", forf_critter_get_direction},
     {"get-infections", forf_critter_get_infections},
     {"random", forf_proc_random},
+    {NULL, NULL},
     {"dump", forf_proc_dump},
-    {NULL, NULL}
 };
 
 

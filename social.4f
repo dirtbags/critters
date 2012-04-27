@@ -33,6 +33,6 @@ east  look us = |
   }
 
   ifelse
-dump
+
 get-direction look them = { infect! } if
 

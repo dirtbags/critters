@@ -94,7 +94,7 @@ function submit() {
     xhr.onreadystatechange = ready;
     xhr.open('POST', 'critters.cgi', true);
     xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
-    xhr.send('p=' + escape(p));
+    xhr.send('p=' + encodeURIComponent(p));
 }
 
         </script>
