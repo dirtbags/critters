@@ -96,11 +96,19 @@ constant(empty, EMPTY);
 constant(wall, WALL);
 constant(us, US);
 constant(them, THEM);
-constant(wait, ACT_WAIT);
-constant(hop, ACT_HOP);
-constant(right, ACT_RIGHT);
-constant(left, ACT_LEFT);
-constant(infect, ACT_INFECT);
+
+#define action(name, val) \
+    static void \
+    forf_critter_ ## name(struct forf_env *env) \
+    { \
+    ((struct critter *)env->udata)->action = val; \
+    }
+
+action(wait, ACT_WAIT);
+action(hop, ACT_HOP);
+action(right, ACT_RIGHT);
+action(left, ACT_LEFT);
+action(infect, ACT_INFECT);
 
 static struct critter *
 whats_at(int x, int y)
@@ -189,15 +197,6 @@ forf_critter_get_infections(struct forf_env *env)
 }
 
 static void
-forf_critter_set_action(struct forf_env *env)
-{
-    struct critter *c = (struct critter *)env->udata;
-    long action = forf_pop_num(env);
-
-    c->action = (int)action;
-}
-
-static void
 forf_proc_random(struct forf_env *env)
 {
     long max = forf_pop_num(env);
@@ -214,15 +213,14 @@ struct forf_lexical_env critter_lenv_addons[] = {
     {"wall", forf_critter_const_wall},
     {"us", forf_critter_const_us},
     {"them", forf_critter_const_them},
-    {"wait", forf_critter_const_wait},
-    {"hop", forf_critter_const_hop},
-    {"right", forf_critter_const_right},
-    {"left", forf_critter_const_left},
-    {"infect", forf_critter_const_infect},
+    {"wait!", forf_critter_wait},
+    {"hop!", forf_critter_hop},
+    {"right!", forf_critter_right},
+    {"left!", forf_critter_left},
+    {"infect!", forf_critter_infect},
     {"look", forf_critter_look},
     {"get-direction", forf_critter_get_direction},
     {"get-infections", forf_critter_get_infections},
-    {"set-action!", forf_critter_set_action},
     {"random", forf_proc_random},
     {NULL, NULL}
 };

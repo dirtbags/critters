@@ -1,24 +1,24 @@
-hop set-action!
-get-direction north <> { right set-action! } if
+hop!
+get-direction north <> { right! } if
 north look dup wall = us = | {
-    wait set-action!
+    wait!
 
     north look wall = {
-        get-direction west <> { left set-action! } if
+        get-direction west <> { left! } if
     } if
 
     east look empty = {
         hop set-action!
-        get-direction east <> { right set-action! } if
+        get-direction east <> { right! } if
     } if
 
     east look us = {
-        get-direction west <> { left set-action! } if
+        get-direction west <> { left! } if
     } if
 
     west look wall = {
-        get-direction south <> { left set-action! } if
+        get-direction south <> { left! } if
     } if
 } if
 
-get-direction look them = { infect set-action! } if
+get-direction look them = { infect! } if
