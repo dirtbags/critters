@@ -8,7 +8,7 @@ north look dup wall = us = | {
     } if
 
     east look empty = {
-        hop set-action!
+        hop!
         get-direction east <> { right! } if
     } if
 
