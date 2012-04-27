@@ -1,0 +1,38 @@
+hop!
+
+( Chill with our homies )
+north look us =
+south look us = |
+west  look us = |
+east  look us = |
+  {
+    ( Look to the right )
+    get-direction 1 + 4 % look
+    dup them  = { right! } if
+    dup empty = { right! } if
+    pop
+
+    ( Look to the left )
+    get-direction 3 + 4 % look
+    dup them  = { left! } if
+    dup empty = { left! } if
+    pop
+
+    ( Look behind )
+    get-direction 2 + 4 % look
+    dup them  = { get-direction look empty = 
+                    { hop! }
+                    { right! }
+                     ifelse } if
+    pop
+  }
+
+  {
+    ( Try to find a group by walking clockwise )
+    get-direction look empty <> { right! } if
+  }
+
+  ifelse
+dump
+get-direction look them = { infect! } if
+
