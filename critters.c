@@ -80,6 +80,16 @@ int ncritters;
 struct critter *critters;
 
 
+struct forf_lexical_env lenv[LENV_SIZE];
+
+void
+dump_stack(struct forf_stack *s)
+{
+  printf("Stack at %p: ", s);
+  forf_print_stack(stdout, s, lenv);
+  printf("\n");
+}
+
 
 #define constant(name, val)                         \
     static void                                     \
@@ -204,6 +214,12 @@ forf_proc_random(struct forf_env *env)
     forf_push_num(env, rand() % max);
 }
 
+static void
+forf_proc_dump(struct forf_env *env)
+{
+    dump_stack(env->data);
+}
+
 struct forf_lexical_env critter_lenv_addons[] = {
     {"north", forf_critter_const_north},
     {"east", forf_critter_const_east},
@@ -222,20 +238,9 @@ struct forf_lexical_env critter_lenv_addons[] = {
     {"get-direction", forf_critter_get_direction},
     {"get-infections", forf_critter_get_infections},
     {"random", forf_proc_random},
+    {"dump", forf_proc_dump},
     {NULL, NULL}
 };
-
-struct forf_lexical_env lenv[LENV_SIZE];
-
-
-
-void
-dump_stack(struct forf_stack *s)
-{
-  printf("Stack at %p: ", s);
-  forf_print_stack(stdout, s, lenv);
-  printf("\n");
-}
 
 
 void
@@ -385,7 +390,7 @@ one_round(int round)
         c->action = ACT_WAIT;
         ret = forf_eval(&g->env);
         if (! ret) {
-            /* XXX: log error? */
+            // fprintf(stderr, "Error in %p: %s\n", c, forf_error_str[g->env.error]);
             continue;
         }
     }
